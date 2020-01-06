@@ -5,6 +5,13 @@ ifeq ($(MACHINE), x86_64)
 LIB_DIR = lib64
 endif
 
+# https://stackoverflow.com/questions/4580789/ld-unknown-option-soname-on-os-x
+OS := $(shell uname -s)
+SONAME = soname
+ifeq ($(OS), Darwin)
+SONAME = install_name
+endif
+
 PREFIX = /usr
 
 TARGET           = cld2
@@ -27,7 +34,8 @@ INTERNAL_LIBRARY_INCLUDES := $(shell find ./internal -iname '*.h')
 PUBLIC_LIBRARY_INCLUDES   := $(shell find ./public -iname '*.h')
 
 CXX = g++
-CXXFLAGS = -fPIC -O2 -m64
+# https://stackoverflow.com/a/44087345
+CXXFLAGS = -fPIC -O2 -m64 -Wno-narrowing
 
 LD = $(CXX)
 
@@ -58,7 +66,7 @@ ALL_TEST_OBJECTS := $(patsubst %.cc, ./internal/%.o, cld2_unittest_full.cc \
 all: $(ALL_OBJECTS)
 	@echo Building library...
 	@mkdir -p $(BUILD_PATH)
-	$(LD) $(LD_FLAGS) -shared -rdynamic -Wl,-soname -Wl,$(LIBRARY).$(VERSION_MAJOR) -o $(LIBRARY_PATH) $(ALL_OBJECTS)
+	$(LD) $(LD_FLAGS) -shared -rdynamic -Wl,-$(SONAME) -Wl,$(LIBRARY).$(VERSION_MAJOR) -o $(LIBRARY_PATH) $(ALL_OBJECTS)
 
 check: $(ALL_TEST_OBJECTS)
 	@echo Building tests...
